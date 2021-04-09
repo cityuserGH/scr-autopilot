@@ -11,34 +11,32 @@ from PIL import ImageGrab
 from PIL import ImageFilter
 import sched
 import sys
-from PIL import ImageEnhance
-from PIL import Image
-import tkinter as tk
-from tkinter import ttk
+# import tkinter as tk
+# from tkinter import ttk
 from throttle import *
 import requests
 
-print("SCR-Autopilot v0.2.1-beta by MaTY (matyroblox01)")
+print("SCR-Autopilot v0.2.2-beta by MaTY (matyroblox01)")
 print("Checking for updates...")
 URL = "https://matyapi.matymt.repl.co/scr-autopilot/newest-version"
 r = requests.get(url=URL)
 data = r.json()
 version = data['version']
-if not version == "0.2.1":
-    print("\x1B[31;40mYour version is outdated! Please install the latest release on https://github.com/MaTY-MT/scr-autopilot/releases\x1B[0m")
+if not version == "0.2.2":
+    print("Your version is outdated! Please install the latest release on https://github.com/MaTY-MT/scr-autopilot/releases")
 else:
     print("Your version is up-to-date.")
 input("By using this software, you agree, that if the software makes a fault, you are always ready to take over. We are not responsible for any penalties given to your account! It is highly reccomended to use this software only on VIP servers, yet. This software is not an exploit (confirmed by the SCR staff team) and you can use it freely. Press ENTER to continue.")
 
-window = tk.Tk()
-window.title("SCR-Autopilot (scr-autopilot.mmaty.eu)")
-window.minsize(600, 400)
-spd_label = ttk.Label(window, text="Please check the cmd to get informations.")
-lim_label = ttk.Label(window, text="")
-signal_label = ttk.Label(window, text="")
-spd_label.grid(column=0, row=0)
-lim_label.grid(column=0, row=1)
-signal_label.grid(column=0, row=2)
+# window = tk.Tk()
+# window.title("SCR-Autopilot (scr-autopilot.mmaty.eu)")
+# window.minsize(600, 400)
+# spd_label = ttk.Label(window, text="Please check the cmd to get informations.")
+# lim_label = ttk.Label(window, text="")
+# signal_label = ttk.Label(window, text="")
+# spd_label.grid(column=0, row=0)
+# lim_label.grid(column=0, row=1)
+# signal_label.grid(column=0, row=2)
 
 resolution = input("What is the resolution? (fhd, hd) > ")
 if resolution == "fhd":
@@ -87,28 +85,7 @@ def main(lim=None):
             pydirectinput.keyDown("q")
             pydirectinput.keyUp("q")
             print("AWSBUTTON:", "clicked")
-        cap = ImageGrab.grab(bbox=(distance_pos))
-        cap = cap.filter(ImageFilter.MedianFilter())
-        cap = cv2.cvtColor(nm.array(cap), cv2.COLOR_RGB2GRAY)
-        tesstr = pytesseract.image_to_string(
-            cap,
-            config="--psm 7")
-        distance = 0
-        distance = [int(s) for s in re.findall(r'\b\d+\b', tesstr)]
-        try:
-            m_distance = distance[0]
-            distance = distance[1]
-            if distance <= 50 and distance >= 39 and m_distance == 0:
-                print(
-                    "Autopilot will will be disengaged 0.2 miles before the station.")
-            if distance <= 20 and m_distance == 0:
-                print("Autopilot disengaged.")
-                input("Press enter to engage.")
-                print("Autopilot engaged.")
-                time.sleep(1)
-                
-        except:
-            print("Can't read the distance!")
+
         cap = ImageGrab.grab(bbox=(845, 933, 845, 1071))
         pix = im.load()
         awsbutton_value = pix[0, 0]  # Set the RGBA Value of the image (tuple)
@@ -176,12 +153,40 @@ def main(lim=None):
                         lim = 75
                 if green_value == (0, 255, 0):
                     print("AWS:", "green")
-                print("Limit: ", lim)
 
+                print("Limit: ", lim)
                 limitThrottle = int( (lim / max_speed) * 100 )
 
                 print("Limit throttle: ",limitThrottle)
-                throttle(currentThrottle, limitThrottle)
+
+                cap = ImageGrab.grab(bbox=(distance_pos))
+                cap = cap.filter(ImageFilter.MedianFilter())
+                cap = cv2.cvtColor(nm.array(cap), cv2.COLOR_RGB2GRAY)
+                tesstr = pytesseract.image_to_string(
+                    cap,
+                    config="--psm 7")
+                distance = 0
+                distance = [int(s) for s in re.findall(r'\b\d+\b', tesstr)]
+                try:
+                    m_distance = distance[0]
+                    distance = distance[1]
+                    if distance <= 50 and distance >= 39 and m_distance == 0:
+                        print(
+                            "Autopilot will will be disengaged 0.2 miles before the station.")
+                    elif distance <= 20 and m_distance == 0:
+                        if lim >= 45:
+                            print("Slowing down to 45 to prepare for station arrival.")
+                            throttle(currentThrottle, int( (45 / max_speed) * 100 ))
+                        else:
+                            throttle(currentThrottle, limitThrottle)
+                        print("Autopilot disengaged.")
+                        input("Press enter to engage.")
+                        print("Autopilot engaged.")
+                        time.sleep(1)
+                    else:
+                        throttle(currentThrottle, limitThrottle)
+                except IndexError:
+                    print("Can't read the distance!")
 
         # END_LIMIT
         s.enter(1, 1, mainrun, (sc,))
